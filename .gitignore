@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+[Dd]ebug/
+[Rr]elease/
+[Rr]eleases/
