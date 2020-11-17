@@ -385,15 +385,14 @@ __weak int32_t BSP_USBPD_PWR_VBUSGetVoltage(uint32_t Instance, uint32_t *pVoltag
   {
     ret = BSP_ERROR_NONE;
     val = __LL_ADC_CALC_DATA_TO_VOLTAGE( VDDA_APPLI, \
-    LL_ADC_REG_ReadConversionData12(ADC1), \
-    LL_ADC_RESOLUTION_12B); /* mV */
+      LL_ADC_REG_ReadConversionData12(ADC1), \
+      LL_ADC_RESOLUTION_12B); /* mV */
     /* X-NUCLEO-USBPDM board is used */
     /* Value is multiplied by 6.25 (Divider R6/R7 (12K/75K) for VSENSE) */
     val *= 625;
     val /= 100;
-    PWR_DEBUG_TRACE(Instance, "HELP: Update BSP_USBPD_PWR_VBUSGetVoltage");
+    PWR_DEBUG_TRACE(Instance, "HELP: BSP_USBPD_PWR_VBUSGetVoltage");
   }
-
   *pVoltage = val;
   return ret;
   /* USER CODE END BSP_USBPD_PWR_VBUSGetVoltage */

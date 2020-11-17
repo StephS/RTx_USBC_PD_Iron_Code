@@ -9,10 +9,10 @@
   * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
@@ -25,7 +25,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
+// https://github.com/AlexKlimaj/LiPow-Firmware
+// PD User manual: UM2552
+// https://github.com/STMicroelectronics/STM32CubeG4/blob/master/Projects/STM32G474E-EVAL/Applications/USB-PD/USB-PD_Provider_1port/Src/usbpd_vdm_user.c
+// https://github.com/STMicroelectronics/STM32CubeG4/blob/master/Projects/STM32G474E-EVAL/Demonstrations/Modules/ucpd/usbpd_dpm_user.h
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -132,7 +135,6 @@ int main(void)
   MX_USBPD_Init();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  MX_USB_Device_Init();
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
@@ -292,8 +294,7 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
-  HAL_ADCEx_Calibration_Start(&hadc1, sConfig.SingleDiff);
-  HAL_ADC_Start(&hadc1);
+
   /* USER CODE END ADC1_Init 2 */
 
 }
@@ -598,10 +599,6 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    uint8_t buffer[] = "Hello, World!\r\n";
-    CDC_Transmit_FS(buffer, sizeof(buffer));
-    printf("Hello World!\r\n");
-    HAL_Delay(1000);
     osDelay(1);
   }
   /* USER CODE END 5 */

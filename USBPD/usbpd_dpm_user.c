@@ -34,6 +34,9 @@
 #include "usbpd_pwr_user.h"
 #include "string.h"
 #include "cmsis_os.h"
+#if (osCMSIS >= 0x20000U)
+#include "task.h"
+#endif /* osCMSIS >= 0x20000U */
 
 /** @addtogroup STM32_USBPD_APPLICATION
   * @{
@@ -58,6 +61,7 @@ void                USBPD_DPM_UserExecute(void const *argument);
 void                USBPD_DPM_UserExecute(void *argument);
 #endif /* osCMSIS < 0x20000U */
 /* USER CODE BEGIN Private_Define */
+#define DPM_BOX_MESSAGES_MAX              30u
 
 /* USER CODE END Private_Define */
 
@@ -106,7 +110,18 @@ void                USBPD_DPM_UserExecute(void *argument);
   * @{
   */
 /* USER CODE BEGIN Private_Variables */
-
+#if defined(_RTOS)
+osMessageQId  DPMMsgBox;
+#if (osCMSIS >= 0x20000U)
+osThreadAttr_t DPM_Thread_Atrr = {
+  .name       = "DPM",
+  .priority   = osPriorityLow, /*osPriorityLow,*/
+  .stack_size = 128
+};
+#endif /* osCMSIS >= 0x20000U */
+#else
+//volatile uint32_t GUI_Flag = GUI_USER_EVENT_NONE;
+#endif /* _RTOS */
 /* USER CODE END Private_Variables */
 /**
   * @}
@@ -145,6 +160,48 @@ void                USBPD_DPM_UserExecute(void *argument);
 USBPD_StatusTypeDef USBPD_DPM_UserInit(void)
 {
 /* USER CODE BEGIN USBPD_DPM_UserInit */
+  //USBPD_StatusTypeDef _status = USBPD_ERROR;
+  /* PWR SET UP */
+  if(USBPD_OK !=  USBPD_PWR_IF_Init())
+  {
+    return USBPD_ERROR;
+  }
+  //if(USBPD_OK != USBPD_PWR_IF_PowerResetGlobal()) return USBPD_ERROR;
+
+  //if (USBPD_OK != USBPD_VDM_UserInit(USBPD_PORT_0))
+  //{
+  //  return USBPD_ERROR;
+  //}
+
+#if USBPD_PORT_COUNT == 2
+  if (USBPD_OK != USBPD_VDM_UserInit(USBPD_PORT_1))
+  {
+    return USBPD_ERROR;
+  }
+#endif /* USBPD_PORT_COUNT == 2 */
+
+#if (osCMSIS < 0x20000U)
+  osMessageQDef(MsgBox, DPM_BOX_MESSAGES_MAX, uint32_t);
+  DPMMsgBox = osMessageCreate(osMessageQ(MsgBox), NULL);
+
+  osThreadDef(DPM, osPriorityNormal, 0, 128);
+
+  //osThreadDef(DPM, osPriorityLow, 0, 300);
+  //osThreadDef(DPM, USBPD_DPM_UserExecute, osPriorityLow, 0, 300);
+
+  if(NULL == osThreadCreate(osThread(DPM), &DPMMsgBox))
+  {
+    return USBPD_ERROR;
+  }
+  if(NULL == osThreadCreate(osThread(DPM), &DPMMsgBox))
+#else
+  DPMMsgBox = osMessageQueueNew (DPM_BOX_MESSAGES_MAX, sizeof(uint32_t), NULL);
+  if (NULL == osThreadNew(USBPD_DPM_UserExecute, &DPMMsgBox, &DPM_Thread_Atrr))
+#endif /* osCMSIS < 0x20000U */
+  {
+	  return USBPD_ERROR;
+  }
+
   return USBPD_OK;
 /* USER CODE END USBPD_DPM_UserInit */
 }
@@ -326,18 +383,8 @@ void USBPD_DPM_SetDataInfo(uint8_t PortNum, USBPD_CORE_DataInfoType_TypeDef Data
 void USBPD_DPM_SNK_EvaluateCapabilities(uint8_t PortNum, uint32_t *PtrRequestData, USBPD_CORE_PDO_Type_TypeDef *PtrPowerObjectType)
 {
 /* USER CODE BEGIN USBPD_DPM_SNK_EvaluateCapabilities */
-  DPM_USER_DEBUG_TRACE(PortNum, "ADVICE: update USBPD_DPM_SNK_EvaluateCapabilities");
-  USBPD_SNKRDO_TypeDef rdo;
-  /* Initialize RDO */
-  rdo.d32 = 0;
-  /* Prepare the requested pdo */
-  rdo.FixedVariableRDO.ObjectPosition = 1;
-  rdo.FixedVariableRDO.OperatingCurrentIn10mAunits = 50;
-  rdo.FixedVariableRDO.MaxOperatingCurrent10mAunits = 50;
-  rdo.FixedVariableRDO.CapabilityMismatch = 0;
 
-  *PtrPowerObjectType = USBPD_CORE_PDO_TYPE_FIXED;
-  *PtrRequestData = rdo.d32;
+  DPM_USER_DEBUG_TRACE(PortNum, "ADVICE: update USBPD_DPM_SNK_EvaluateCapabilities");
 /* USER CODE END USBPD_DPM_SNK_EvaluateCapabilities */
 }
 
@@ -596,10 +643,7 @@ USBPD_StatusTypeDef USBPD_DPM_RequestVDM_DiscoveryIdentify(uint8_t PortNum, USBP
 {
   USBPD_StatusTypeDef _status = USBPD_ERROR;
 /* USER CODE BEGIN USBPD_DPM_RequestVDM_DiscoveryIdentify */
-  if (USBPD_SOPTYPE_SOP == SOPType)
-  {
-    _status = USBPD_PE_SVDM_RequestIdentity(PortNum, SOPType);
-  }
+
 /* USER CODE END USBPD_DPM_RequestVDM_DiscoveryIdentify */
   DPM_USER_ERROR_TRACE(PortNum, _status, "VDM Discovery Ident not accepted by the stack");
   return _status;

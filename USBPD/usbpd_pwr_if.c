@@ -117,7 +117,9 @@
 USBPD_StatusTypeDef USBPD_PWR_IF_Init(void)
 {
 /* USER CODE BEGIN USBPD_PWR_IF_Init */
-  return USBPD_ERROR;
+  USBPD_StatusTypeDef _status = USBPD_OK;
+
+  return _status;
 /* USER CODE END USBPD_PWR_IF_Init */
 }
 
@@ -130,7 +132,30 @@ USBPD_StatusTypeDef USBPD_PWR_IF_Init(void)
 USBPD_StatusTypeDef USBPD_PWR_IF_SupplyReady(uint8_t PortNum, USBPD_VSAFE_StatusTypeDef Vsafe)
 {
 /* USER CODE BEGIN USBPD_PWR_IF_SupplyReady */
-  return USBPD_ERROR;
+  USBPD_StatusTypeDef status = USBPD_ERROR;
+  uint32_t pVoltage = 0;
+
+  /* check for valid port */
+  if (!USBPD_PORT_IsValid(PortNum))
+  {
+    return USBPD_ERROR;
+  }
+
+  if (BSP_ERROR_NONE == BSP_USBPD_PWR_VBUSGetVoltage(PortNum, &pVoltage))
+  {
+	  if (USBPD_VSAFE_0V == Vsafe)
+	  {
+	    /* Vsafe0V */
+	    status = ((pVoltage < USBPD_PWR_HIGH_VBUS_THRESHOLD)? USBPD_OK: USBPD_ERROR);
+	  }
+	  else
+	  {
+	    /* Vsafe5V */
+	    status = ((pVoltage > USBPD_PWR_HIGH_VBUS_THRESHOLD)? USBPD_OK: USBPD_ERROR);
+	  }
+  }
+
+  return status;
 /* USER CODE END USBPD_PWR_IF_SupplyReady */
 }
 
@@ -158,7 +183,7 @@ USBPD_StatusTypeDef USBPD_PWR_IF_Enable_VConn(uint8_t PortNum, CCxPin_TypeDef CC
 {
 /* USER CODE BEGIN USBPD_PWR_IF_Enable_VConn */
   return USBPD_ERROR;
-/* USER CODE END USBPD_PWR_IF_Enable_VConn */
+ /* USER CODE END USBPD_PWR_IF_Enable_VConn */
 }
 
 /**
